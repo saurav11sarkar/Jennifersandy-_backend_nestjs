@@ -1,18 +1,17 @@
 import {
   Controller,
   Post,
+  Put,
   Body,
   HttpStatus,
   HttpCode,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 import { CrmService } from './crm.service';
-
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import AuthGuard from 'src/app/middlewares/auth.guard';
-import { SyncOnOfficeProductsDto } from '../product/dto/sync-onoffice-products.dto';
 import { UpdateOnOfficeCredentialsDto } from './dto/update-onoffice-credentials.dto';
+import { SyncOnOfficeProductsDto } from '../onoffice/dto/syncOnOfficeProducts.dto';
 
 @ApiTags('crm')
 @Controller('crm')
@@ -20,33 +19,24 @@ export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 
   @Post('sync/onoffice')
-  @ApiOperation({ summary: 'sync onOffice estates into products' })
+  @ApiOperation({ summary: 'Sync onOffice estates into DB' })
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard('admin'))
   @ApiBody({ type: SyncOnOfficeProductsDto, required: false })
   @HttpCode(HttpStatus.OK)
   async syncProducts(@Body() syncDto: SyncOnOfficeProductsDto) {
     const result = await this.crmService.syncProducts(syncDto);
-
-    return {
-      message: 'CRM products synced successfully',
-      data: result,
-    };
+    return { message: 'CRM products synced successfully', data: result };
   }
 
   @Put('onoffice/credentials')
-  @ApiOperation({ summary: 'update regenerated onOffice token and secret' })
+  @ApiOperation({ summary: 'Update regenerated onOffice token and secret' })
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard('admin'))
   @ApiBody({ type: UpdateOnOfficeCredentialsDto })
   @HttpCode(HttpStatus.OK)
-  async updateOnOfficeCredentials(
-    @Body() updateOnOfficeCredentialsDto: UpdateOnOfficeCredentialsDto,
-  ) {
-    const result = await this.crmService.updateOnOfficeCredentials(
-      updateOnOfficeCredentialsDto,
-    );
-
+  async updateOnOfficeCredentials(@Body() dto: UpdateOnOfficeCredentialsDto) {
+    const result = await this.crmService.updateOnOfficeCredentials(dto);
     return {
       message: 'onOffice credentials updated successfully',
       data: result,

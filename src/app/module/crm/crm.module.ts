@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { CrmService } from './crm.service';
 import { CrmController } from './crm.controller';
-import { ProductModule } from '../product/product.module';
+import { OnofficeModule } from '../onoffice/onoffice.module';
 
 @Module({
-  imports: [ProductModule],
+  imports: [OnofficeModule],
   controllers: [CrmController],
   providers: [CrmService],
 })

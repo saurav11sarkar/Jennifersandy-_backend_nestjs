@@ -1,59 +1,85 @@
 import { Injectable } from '@nestjs/common';
 import fs from 'fs/promises';
 import path from 'path';
-import { SyncOnOfficeProductsDto } from '../product/dto/sync-onoffice-products.dto';
-import { ProductService } from '../product/product.service';
+
+import { OnofficeService } from '../onoffice/onoffice.service';
 import { UpdateOnOfficeCredentialsDto } from './dto/update-onoffice-credentials.dto';
+import { SyncOnOfficeProductsDto } from '../onoffice/dto/syncOnOfficeProducts.dto';
 
 @Injectable()
 export class CrmService {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly onofficeService: OnofficeService) {}
 
   syncProducts(syncDto: SyncOnOfficeProductsDto) {
-    return this.productService.syncFromOnOffice(syncDto);
+    return this.onofficeService.syncFromOnOffice(syncDto);
   }
 
+  // async updateOnOfficeCredentials(dto: UpdateOnOfficeCredentialsDto) {
+  //   const updates: Record<string, string> = {};
+
+  //   if (dto.token || dto.estateToken)
+  //     updates['ONOFFICE_ESTATE_TOKEN'] = dto.estateToken ?? dto.token!;
+  //   if (dto.secret || dto.estateSecret)
+  //     updates['ONOFFICE_ESTATE_SECRET'] = dto.estateSecret ?? dto.secret!;
+  //   if (dto.token || dto.pictureToken)
+  //     updates['ONOFFICE_PICTURE_TOKEN'] = dto.pictureToken ?? dto.token!;
+  //   if (dto.secret || dto.pictureSecret)
+  //     updates['ONOFFICE_PICTURE_SECRET'] = dto.pictureSecret ?? dto.secret!;
+
+  //   const envPath = path.join(process.cwd(), '.env');
+  //   let envContent = await fs.readFile(envPath, 'utf8');
+
+  //   for (const [key, value] of Object.entries(updates)) {
+  //     process.env[key] = value;
+  //     envContent = this.upsertEnvValue(envContent, key, value);
+  //   }
+
+  //   await fs.writeFile(envPath, envContent);
+  //   console.log(Object.keys(updates));
+  //   return { updatedKeys: Object.keys(updates) };
+  // }
+
   async updateOnOfficeCredentials(dto: UpdateOnOfficeCredentialsDto) {
-    const estateToken = dto.estateToken ?? dto.token;
-    const estateSecret = dto.estateSecret ?? dto.secret;
-    const pictureToken = dto.pictureToken ?? dto.token ?? estateToken;
-    const pictureSecret = dto.pictureSecret ?? dto.secret ?? estateSecret;
+    const updates: Record<string, string> = {};
 
-    const updates = {
-      ONOFFICE_ESTATE_TOKEN: estateToken,
-      ONOFFICE_ESTATE_SECRET: estateSecret,
-      ONOFFICE_PICTURE_TOKEN: pictureToken,
-      ONOFFICE_PICTURE_SECRET: pictureSecret,
-    };
-
-    const cleanUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([, value]) => value !== undefined),
-    ) as Record<string, string>;
+    if (dto.token || dto.estateToken)
+      updates['ONOFFICE_ESTATE_TOKEN'] = dto.estateToken ?? dto.token!;
+    if (dto.secret || dto.estateSecret)
+      updates['ONOFFICE_ESTATE_SECRET'] = dto.estateSecret ?? dto.secret!;
+    if (dto.token || dto.pictureToken)
+      updates['ONOFFICE_PICTURE_TOKEN'] = dto.pictureToken ?? dto.token!;
+    if (dto.secret || dto.pictureSecret)
+      updates['ONOFFICE_PICTURE_SECRET'] = dto.pictureSecret ?? dto.secret!;
 
     const envPath = path.join(process.cwd(), '.env');
     let envContent = await fs.readFile(envPath, 'utf8');
 
-    for (const [key, value] of Object.entries(cleanUpdates)) {
+    for (const [key, value] of Object.entries(updates)) {
       process.env[key] = value;
       envContent = this.upsertEnvValue(envContent, key, value);
     }
 
     await fs.writeFile(envPath, envContent);
 
+    // Response এ details দেখাও
+    const updatedDetails = Object.entries(updates).map(([key, value]) => ({
+      key,
+      preview: value.substring(0, 8) + '...', // security জন্য full value না দেখিয়ে শুধু প্রথম 8 char
+    }));
+
     return {
-      updatedKeys: Object.keys(cleanUpdates),
+      updatedKeys: Object.keys(updates),
+      updatedDetails,
+      updatedAt: new Date(),
+      message: `${Object.keys(updates).length} credentials updated in .env`,
     };
   }
 
   private upsertEnvValue(content: string, key: string, value: string) {
-    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = new RegExp(`^${escapedKey}=.*$`, 'm');
+    const pattern = new RegExp(`^${key}=.*$`, 'm');
     const line = `${key}=${value}`;
-
-    if (pattern.test(content)) {
-      return content.replace(pattern, line);
-    }
-
-    return `${content.trimEnd()}\n${line}\n`;
+    return pattern.test(content)
+      ? content.replace(pattern, line)
+      : `${content.trimEnd()}\n${line}\n`;
   }
 }
