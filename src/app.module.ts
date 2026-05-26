@@ -13,6 +13,7 @@ import { PaymentModule } from './app/module/payment/payment.module';
 import { WebhookModule } from './app/module/webhook/webhook.module';
 import { CrmModule } from './app/module/crm/crm.module';
 import { OnofficeModule } from './app/module/onoffice/onoffice.module';
+import { InquiryModule } from './app/module/inquiry/inquiry.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { OnofficeModule } from './app/module/onoffice/onoffice.module';
     WebhookModule,
     CrmModule,
     OnofficeModule,
+    InquiryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
