@@ -14,6 +14,7 @@ import { WebhookModule } from './app/module/webhook/webhook.module';
 import { CrmModule } from './app/module/crm/crm.module';
 import { OnofficeModule } from './app/module/onoffice/onoffice.module';
 import { InquiryModule } from './app/module/inquiry/inquiry.module';
+import { BlogModule } from './app/module/blog/blog.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { InquiryModule } from './app/module/inquiry/inquiry.module';
     CrmModule,
     OnofficeModule,
     InquiryModule,
+    BlogModule,
   ],
   controllers: [AppController],
   providers: [AppService],
