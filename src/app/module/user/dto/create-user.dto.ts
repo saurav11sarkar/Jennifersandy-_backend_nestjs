@@ -60,6 +60,11 @@ export class CreateUserDto {
   @ApiPropertyOptional({ example: '' })
   @IsOptional()
   @IsString()
+  bio?: string;
+
+  @ApiPropertyOptional({ example: '' })
+  @IsOptional()
+  @IsString()
   postalCode?: string;
 
   @ApiPropertyOptional()

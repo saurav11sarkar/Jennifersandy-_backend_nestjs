@@ -1,22 +1,50 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsBoolean, IsDateString, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBlogDto {
-  @ApiPropertyOptional({ example: 'Blog Title' })
+  @ApiProperty({ example: 'Living in Düsseldorf: The Ultimate Guide' })
+  @IsString()
+  title!: string;
+
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @IsOptional()
+  thumbnail?: string;
+
+  @ApiPropertyOptional({ example: 'A short preview of the blog post...' })
   @IsOptional()
   @IsString()
-  title?: string;
+  excerpt?: string;
 
-  @ApiPropertyOptional({
-    type: 'string',
-    format: 'binary',
-    example: 'blog-thumbnail.jpg',
-  })
-  @IsOptional()
-  thembnail?: string;
-
-  @ApiPropertyOptional({ example: 'Blog Description' })
+  @ApiPropertyOptional({ example: '<p>Full article HTML/Markdown content here...</p>' })
   @IsOptional()
   @IsString()
-  description?: string;
+  content?: string;
+
+  @ApiPropertyOptional({ example: 'Living' })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiPropertyOptional({ example: ['düsseldorf', 'tips', 'expat'] })
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  tags?: string[];
+
+  @ApiPropertyOptional({ example: 'Jenny Fischer' })
+  @IsOptional()
+  @IsString()
+  author?: string;
+
+  @ApiPropertyOptional({ example: '2025-01-01T00:00:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  publishedAt?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => (typeof value === 'string' ? value === 'true' : value))
+  isPublished?: boolean;
 }

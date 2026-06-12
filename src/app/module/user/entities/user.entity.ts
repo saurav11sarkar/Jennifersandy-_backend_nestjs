@@ -6,50 +6,35 @@ import config from '../../../config';
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({
-    required: [true, 'First name is required'],
-    trim: true,
-  })
-  firstName: string;
+  @Prop({ required: [true, 'First name is required'], trim: true })
+  firstName!: string;
 
-  @Prop({
-    required: [true, 'Last name is required'],
-    trim: true,
-  })
-  lastName: string;
+  @Prop({ required: [true, 'Last name is required'], trim: true })
+  lastName!: string;
 
-  @Prop({
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-  })
-  email: string;
+  @Prop({ required: [true, 'Email is required'], unique: true, lowercase: true, trim: true })
+  email!: string;
 
-  @Prop({
-    required: [true, 'Password is required'],
-    minlength: 6,
-    select: false,
-  })
-  password: string;
+  @Prop({ required: [true, 'Password is required'], minlength: 6, select: false })
+  password!: string;
 
-  @Prop({
-    enum: ['user', 'admin'],
-    default: 'user',
-  })
-  role: string;
+  @Prop({ enum: ['user', 'admin'], default: 'user' })
+  role!: string;
 
   @Prop({ enum: ['male', 'female'] })
-  gender: string;
+  gender!: string;
 
   @Prop()
-  streetAddress: string;
+  bio?: string;
 
   @Prop()
-  location: string;
+  streetAddress!: string;
 
   @Prop()
-  profilePicture: string;
+  location!: string;
+
+  @Prop()
+  profilePicture!: string;
 
   @Prop()
   postalCode?: string;
@@ -63,23 +48,19 @@ export class User {
   @Prop()
   otpExpiry?: Date;
 
+  @Prop({ default: false })
+  isVerified!: boolean;
+
   @Prop({ enum: ['active', 'suspended'], default: 'active' })
-  status: string;
+  status!: string;
 
   @Prop()
-  verifiedForget: boolean;
-
-  @Prop()
-  stripeAccountId: string;
+  verifiedForget!: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
-
-  this.password = await bcrypt.hash(
-    this.password,
-    Number(config.bcryptSaltRounds),
-  );
+  this.password = await bcrypt.hash(this.password, Number(config.bcryptSaltRounds));
 });

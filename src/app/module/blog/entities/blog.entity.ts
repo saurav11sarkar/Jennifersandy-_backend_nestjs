@@ -5,14 +5,37 @@ export type BlogDocument = HydratedDocument<Blog>;
 
 @Schema({ timestamps: true })
 export class Blog {
-  @Prop()
+  @Prop({ required: true })
   title!: string;
 
-  @Prop()
-  thembnail!: string;
+  @Prop({ unique: true, sparse: true })
+  slug!: string;
 
-  @Prop()
-  description!: string;
+  @Prop({ default: '' })
+  thumbnail!: string;
+
+  @Prop({ default: '' })
+  excerpt!: string;
+
+  @Prop({ default: '' })
+  content!: string;
+
+  @Prop({ default: '' })
+  category!: string;
+
+  @Prop({ type: [String], default: [] })
+  tags!: string[];
+
+  @Prop({ default: '' })
+  author!: string;
+
+  @Prop({ type: Date, default: null })
+  publishedAt!: Date | null;
+
+  @Prop({ default: true })
+  isPublished!: boolean;
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);
+BlogSchema.index({ category: 1 });
+BlogSchema.index({ isPublished: 1 });
