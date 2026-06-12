@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException } from '@nestjs/common';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -7,68 +7,87 @@ import { Blog, BlogDocument } from './entities/blog.entity';
 import { fileUpload } from 'src/app/helpers/fileUploder';
 import { IFilterParams } from 'src/app/helpers/pick';
 import paginationHelper, { IOptions } from 'src/app/helpers/pagenation';
-import buildWhereConditions from 'src/app/helpers/buildWhereConditions';
 
 @Injectable()
 export class BlogService {
   constructor(@InjectModel(Blog.name) private blogModel: Model<BlogDocument>) {}
 
-  async createBlog(createBlogDto: CreateBlogDto, file: Express.Multer.File) {
+  private generateSlug(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .substring(0, 80);
+  }
+
+  async createBlog(createBlogDto: CreateBlogDto, file?: Express.Multer.File) {
     if (file) {
       const { url } = await fileUpload.uploadToCloudinary(file);
-      createBlogDto.thembnail = url;
+      createBlogDto.thumbnail = url;
     }
-    const newBlog = new this.blogModel(createBlogDto);
+
+    const slug = this.generateSlug(createBlogDto.title);
+    const existing = await this.blogModel.findOne({ slug });
+    const finalSlug = existing ? `${slug}-${Date.now()}` : slug;
+
+    const newBlog = new this.blogModel({
+      ...createBlogDto,
+      slug: finalSlug,
+      publishedAt: createBlogDto.isPublished !== false ? (createBlogDto.publishedAt ?? new Date()) : null,
+    });
     return newBlog.save();
   }
 
   async findAllBlogs(params: IFilterParams, options: IOptions) {
     const { limit, page, skip, sortBy, sortOrder } = paginationHelper(options);
 
-    const whereConditions = buildWhereConditions(params, [
-      'title',
-      'description',
+    const conditions: Record<string, any> = { isPublished: true };
+
+    if (params.searchTerm) {
+      const regex = new RegExp(
+        String(params.searchTerm).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        'i',
+      );
+      conditions.$or = [{ title: regex }, { excerpt: regex }, { content: regex }];
+    }
+
+    if (params.category) conditions.category = params.category;
+    if (params.tag) conditions.tags = params.tag;
+
+    const [data, total] = await Promise.all([
+      this.blogModel.find(conditions).select('-content').skip(skip).limit(limit).sort({ [sortBy]: sortOrder }),
+      this.blogModel.countDocuments(conditions),
     ]);
 
-    const result = await this.blogModel
-      .find(whereConditions)
-      .limit(limit)
-      .skip(skip)
-      .sort({ [sortBy]: sortOrder });
-    const total = await this.blogModel.countDocuments(whereConditions);
-
-    return {
-      meta: {
-        page,
-        limit,
-        total,
-      },
-      data: result,
-    };
+    return { meta: { page, limit, total }, data };
   }
 
   async findOneBlog(id: string) {
     const result = await this.blogModel.findById(id);
+    if (!result) throw new HttpException('Blog not found', 404);
     return result;
   }
 
-  async updateBlog(
-    id: string,
-    updateBlogDto: UpdateBlogDto,
-    file?: Express.Multer.File,
-  ) {
+  async findBlogBySlug(slug: string) {
+    const result = await this.blogModel.findOne({ slug, isPublished: true });
+    if (!result) throw new HttpException('Blog not found', 404);
+    return result;
+  }
+
+  async updateBlog(id: string, updateBlogDto: UpdateBlogDto, file?: Express.Multer.File) {
     if (file) {
       const { url } = await fileUpload.uploadToCloudinary(file);
-      updateBlogDto.thembnail = url;
+      updateBlogDto.thumbnail = url;
     }
-    const result = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, {
-      new: true,
-    });
+    const result = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, { new: true });
+    if (!result) throw new HttpException('Blog not found', 404);
     return result;
   }
 
   async removeBlog(id: string) {
     const result = await this.blogModel.findByIdAndDelete(id);
+    if (!result) throw new HttpException('Blog not found', 404);
     return result;
   }
 }

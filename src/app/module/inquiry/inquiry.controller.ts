@@ -14,122 +14,46 @@ import {
 import { InquiryService } from './inquiry.service';
 import { CreateInquiryDto } from './dto/create-inquiry.dto';
 import { UpdateInquiryDto } from './dto/update-inquiry.dto';
-import { ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import AuthGuard from 'src/app/middlewares/auth.guard';
 import pick from 'src/app/helpers/pick';
 
+@ApiTags('Inquiry')
 @Controller('inquiry')
 export class InquiryController {
   constructor(private readonly inquiryService: InquiryService) {}
 
+  // Guests AND logged-in users can submit inquiries
   @Post()
-  @ApiOperation({ summary: 'Create inquiry' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard('user', 'admin'))
+  @ApiOperation({ summary: 'Submit an inquiry (guests allowed)' })
   @HttpCode(HttpStatus.CREATED)
-  async createInquiry(
-    @Req() req: Request,
-    @Body() createInquiryDto: CreateInquiryDto,
-  ) {
-    const result = await this.inquiryService.createInquiry(
-      req.user!.id,
-      createInquiryDto,
-    );
-
-    return {
-      message: 'Inquiry create successfully',
-      data: result,
-    };
+  async createInquiry(@Req() req: Request, @Body() createInquiryDto: CreateInquiryDto) {
+    const userId = req.user?.id;
+    const result = await this.inquiryService.createInquiry(createInquiryDto, userId);
+    return { message: 'Inquiry submitted successfully', data: result };
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all inquiries' })
+  @ApiOperation({ summary: 'Get all inquiries (auth required)' })
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard('admin', 'user'))
-  @ApiQuery({
-    name: 'searchTerm',
-    type: String,
-    required: false,
-    description: 'Search term',
-  })
-  @ApiQuery({
-    name: 'firstName',
-    type: String,
-    required: false,
-    description: 'First name',
-  })
-  @ApiQuery({
-    name: 'lastName',
-    type: String,
-    required: false,
-    description: 'Last name',
-  })
-  @ApiQuery({
-    name: 'email',
-    type: String,
-    required: false,
-    description: 'Email',
-  })
-  @ApiQuery({
-    name: 'phoneNumber',
-    type: String,
-    required: false,
-    description: 'Phone number',
-  })
-  @ApiQuery({
-    name: 'message',
-    type: String,
-    required: false,
-    description: 'Message',
-  })
-  @ApiQuery({
-    name: 'limit',
-    type: Number,
-    required: false,
-    description: 'Limit',
-  })
-  @ApiQuery({
-    name: 'page',
-    type: Number,
-    required: false,
-    description: 'Page',
-  })
-  @ApiQuery({
-    name: 'sortBy',
-    type: String,
-    required: false,
-    description: 'Sort by',
-  })
-  @ApiQuery({
-    name: 'sortOrder',
-    type: String,
-    required: false,
-    description: 'Sort order',
-  })
+  @ApiQuery({ name: 'searchTerm', type: String, required: false })
+  @ApiQuery({ name: 'firstName', type: String, required: false })
+  @ApiQuery({ name: 'lastName', type: String, required: false })
+  @ApiQuery({ name: 'email', type: String, required: false })
+  @ApiQuery({ name: 'phoneNumber', type: String, required: false })
+  @ApiQuery({ name: 'message', type: String, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'sortBy', type: String, required: false })
+  @ApiQuery({ name: 'sortOrder', type: String, required: false })
   @HttpCode(HttpStatus.OK)
   async getAllInquiries(@Req() req: Request) {
-    const filters = pick(req.query, [
-      'searchTerm',
-      'firstName',
-      'lastName',
-      'email',
-      'phoneNumber',
-      'message',
-    ]);
-
+    const filters = pick(req.query, ['searchTerm', 'firstName', 'lastName', 'email', 'phoneNumber', 'message']);
     const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
-    const result = await this.inquiryService.findAllInquiries(
-      req.user!.id,
-      filters,
-      options,
-    );
-
-    return {
-      message: 'All inquiries fetched successfully',
-      data: result.data,
-      meta: result.meta,
-    };
+    const result = await this.inquiryService.findAllInquiries(req.user!.id, filters, options);
+    return { message: 'Inquiries fetched successfully', data: result.data, meta: result.meta };
   }
 
   @Get(':id')
@@ -137,10 +61,7 @@ export class InquiryController {
   @HttpCode(HttpStatus.OK)
   async findInquiryById(@Param('id') id: string) {
     const result = await this.inquiryService.findInquiryById(id);
-    return {
-      message: 'Inquiry fetched successfully',
-      data: result,
-    };
+    return { message: 'Inquiry fetched successfully', data: result };
   }
 
   @Put(':id')
@@ -150,22 +71,16 @@ export class InquiryController {
   @HttpCode(HttpStatus.OK)
   async updateInquiry(@Param('id') id: string, @Body() updateInquiryDto: UpdateInquiryDto) {
     const result = await this.inquiryService.updateInquiry(id, updateInquiryDto);
-    return {
-      message: 'Inquiry updated successfully',
-      data: result,
-    };
+    return { message: 'Inquiry updated successfully', data: result };
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete inquiry' })
+  @ApiOperation({ summary: 'Delete inquiry (admin)' })
   @ApiBearerAuth('access-token')
   @UseGuards(AuthGuard('admin'))
   @HttpCode(HttpStatus.OK)
   async deleteInquiry(@Param('id') id: string) {
     const result = await this.inquiryService.deleteInquiry(id);
-    return {
-      message: 'Inquiry deleted successfully',
-      data: result,
-    };
+    return { message: 'Inquiry deleted successfully', data: result };
   }
 }
