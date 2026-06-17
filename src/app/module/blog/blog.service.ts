@@ -34,7 +34,10 @@ export class BlogService {
     const newBlog = new this.blogModel({
       ...createBlogDto,
       slug: finalSlug,
-      publishedAt: createBlogDto.isPublished !== false ? (createBlogDto.publishedAt ?? new Date()) : null,
+      publishedAt:
+        createBlogDto.isPublished !== false
+          ? (createBlogDto.publishedAt ?? new Date())
+          : null,
     });
     return newBlog.save();
   }
@@ -49,14 +52,22 @@ export class BlogService {
         String(params.searchTerm).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
         'i',
       );
-      conditions.$or = [{ title: regex }, { excerpt: regex }, { content: regex }];
+      conditions.$or = [
+        { title: regex },
+        { excerpt: regex },
+        { content: regex },
+      ];
     }
 
     if (params.category) conditions.category = params.category;
     if (params.tag) conditions.tags = params.tag;
 
     const [data, total] = await Promise.all([
-      this.blogModel.find(conditions).select('-content').skip(skip).limit(limit).sort({ [sortBy]: sortOrder }),
+      this.blogModel
+        .find(conditions)
+        .skip(skip)
+        .limit(limit)
+        .sort({ [sortBy]: sortOrder }),
       this.blogModel.countDocuments(conditions),
     ]);
 
@@ -75,12 +86,18 @@ export class BlogService {
     return result;
   }
 
-  async updateBlog(id: string, updateBlogDto: UpdateBlogDto, file?: Express.Multer.File) {
+  async updateBlog(
+    id: string,
+    updateBlogDto: UpdateBlogDto,
+    file?: Express.Multer.File,
+  ) {
     if (file) {
       const { url } = await fileUpload.uploadToCloudinary(file);
       updateBlogDto.thumbnail = url;
     }
-    const result = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, { new: true });
+    const result = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, {
+      new: true,
+    });
     if (!result) throw new HttpException('Blog not found', 404);
     return result;
   }
